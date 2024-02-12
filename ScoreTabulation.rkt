@@ -20,6 +20,10 @@
 
 (define example-game3
   "Edgar Dikester X X 4 5 8 / X 3 / 7 2 X 9 / X X 8")
+
+(define example-game4
+  "Albert Perlis X X X 7 / X X 2 6 4 / 8 / X X X")
+
 ;A game is a pair with a player name as the first value and a list of frames as the second value  
 (define (line->game line)
  (cons
@@ -59,7 +63,9 @@
           (append (append game '(0) '(0)))
           (append game '(0)))
       (if (equal? (first(rest(reverse game))) "X")
-          (append game '(0))
+          (if (equal? (first(rest(rest(reverse game)))) "X")
+              (append (append game '(0) '(0)))
+              (append game '(0)))
           game)))
 
 
@@ -86,3 +92,15 @@
       (if (string->number string)
           (string->number string)
           string)))
+
+(define (report input-file)
+ (let ([team-record (make-team-records input-file)])
+   (team-scores team-record)))
+
+;Team 1 works, team 2 has input that my program isn't properly handling. The print statements are for viewing team 1 results before program crash :)
+(define (team-scores team-record)
+   (printf (first(first team-record))) ;team 1 name
+    (printf(number->string(foldl + 0  (first(map score-game  (rest(first team-record))))))) ;team 1 score
+   (first(rest team-record)) ;team 2 name
+    (foldl + 0  (first(map score-game  (rest(rest team-record)))))) ;team 2 score
+   
