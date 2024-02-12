@@ -80,14 +80,19 @@
           (string->number string)
           string)))
 
+;Prints the facts the assignment wants reported.This is the main function which calls all the others
 (define (report [input-file "scores.txt"] )
  (let ([team-record (make-team-records input-file)])
    (println "Team Scores:")
    (println (team-scores team-record))
    (println (string-append (determine-winning-team (first (team-scores team-record)) (second (team-scores team-record)))" victory"))
+   (println (string-append (first (first team-record)) " player scores"))
+   (println (map player-score(map (curry find-player-games (first team-record)) (team-members (first team-record)))))
+   (println (string-append (first (rest team-record)) " player scores"))
+   (println (map player-score(map (curry find-player-games (rest team-record)) (team-members (rest team-record)))))
    ))
 
-;Team 1 works, team 2 has input that my program isn't properly handling. The print statements are for viewing team 1 results before program crash :)
+;Returns a list containting 2 pairs. Each pair containts a teams's name and score
 (define (team-scores team-record)
 (list 
   (cons 
@@ -97,8 +102,30 @@
     (first(rest team-record)) ;team 2 name
     (foldl + 0  ( map first (map score-game  (rest(rest team-record)))))))) ;team 2 score
 
+;Takes 2 team-score pairs, and returns the name of the higher scoring team
 (define (determine-winning-team team1 team2)
   (cond
     [(> (cdr team1) (cdr team2)) (car team1)]
     [(< (cdr team1) (cdr team2)) (car team2)]
     [(equal? (cdr team1) (cdr team2)) ("SHARED")]))
+
+;takes in a team record and returns a list of all players found in its games
+(define (team-members team-record)
+  (remove-duplicates (map first (rest team-record))))
+
+;returns all games played by a specific player
+(define (find-player-games team-record player)
+  (filter (curry name-equal? player)  (rest team-record)))
+
+(define (name-equal? name game)
+  (equal? (first game) name))
+
+(define (find-player-games-testing)
+  (find-player-games (first(make-team-records "scores.txt")) "Frosty Snoman"))
+
+;returns a pair containing player name and thier score across thier games
+;precondition: the player played precisely 3 games
+(define (player-score 3games)
+  (cons
+   (first(first 3games)) ;name
+  (foldl + 0 (map first (list(score-game (first 3games)) (score-game (second 3games)) (score-game (third 3games))))))) ;score
