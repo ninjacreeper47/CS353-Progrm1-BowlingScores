@@ -17,16 +17,20 @@
 
 ;A game is a pair with a player name as the first value and a list of frames as the second value  
 (define (line->game line)
- (cons (extract-name-from-gamestring line) (extract-frames-from-gamestring line)))
+ (cons
+  (extract-name-from-gamestring line)
+  (extract-frames-from-gamestring line)))
 
 ;Takes in a string representing a game and returns a string containting the player name.
 (define (extract-name-from-gamestring line)
  (string-join(append(take (string-split line " ") 2))))
 
 ;Takes in a string representing a game and returns a list of frames.  This function creates the list of tokens and passes that to bulid-frame-list
+;The list of tokens does not include whitespace and all digits are numeric types instead of strings
 (define (extract-frames-from-gamestring line)
- (build-frame-list 
-  (filter non-empty-string? (drop (string-split line " ") 2))))
+  (build-frame-list
+   (map string->number-or-string
+   (filter non-empty-string? (drop (string-split line " ") 2)))))
 
 ;Begins constructing the next frame once it encounters an X or after creating a frame from 2 tokens
 ;The current-frame parameter is for the function's internal recursive logic.
@@ -34,7 +38,7 @@
 ;TODO: make function more resilient to unexpected data format
 (define (build-frame-list remaining-tokens [current-frame null])
   (if (empty? remaining-tokens)
-      current-frame  ;Base case, this will either return null or a 1 roll  frame if a spare granted an extra shot at the end
+     current-frame  ;Base case, this will either return null or a 1 roll  frame if a spare granted an extra shot at the end
   (if (null? current-frame)
       (build-frame-list (rest remaining-tokens) (first remaining-tokens))
       (if (equal? current-frame "X")
@@ -42,4 +46,24 @@
           (cons (append (list current-frame) (first remaining-tokens)) (build-frame-list (rest remaining-tokens)))))))
 
 
+(define (score-game game)
+null)
+;TODO:implement score-game
 
+;Outputs a list consisting of the score, and new nextroll and 2ndnextroll values
+;This function is designed around the next/2nd-next roll parameters being already calculated
+(define (score-frame frame [next-roll 0] [2nd-next-roll 0])
+  (cond
+    [(equal? frame "X") (list (+ 10 next-roll 2nd-next-roll) 10  next-roll)]
+    [(equal? (cdr frame) "/") (list (+ 10 next-roll) (string->number(car frame)) (- 10 (string->number(car frame))))]
+   ; [else (list (string+string->number (car frame) (cdr fraame))
+                ))
+
+
+;Converts a string to a number if the string is numeric, otherwise returns the string back. Returns null if given null
+(define (string->number-or-string string)
+  (if (null? string)
+      null
+      (if (string->number string)
+          (string->number string)
+          string)))
