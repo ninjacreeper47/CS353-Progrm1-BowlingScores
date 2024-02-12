@@ -15,6 +15,11 @@
 (define example-game
   "Frosty Snoman X 7 2  4 5  8 /  3 6  X  X  5 / 9 / 1 8")
 
+(define example-game2
+  "Chuck Babbage 8 / X 6 / 5 3 X X 4 5 8 / 2 7 9 / 9")
+
+(define example-game3
+  "Edgar Dikester X X 4 5 8 / X 3 / 7 2 X 9 / X X 8")
 ;A game is a pair with a player name as the first value and a list of frames as the second value  
 (define (line->game line)
  (cons
@@ -29,35 +34,49 @@
 ;The list of tokens does not include whitespace and all digits are numeric types instead of strings
 (define (extract-frames-from-gamestring line)
   (build-frame-list
+   (fix-those-annoying-games-with-incomplete-frames
    (map string->number-or-string
-   (filter non-empty-string? (drop (string-split line " ") 2)))))
+   (filter non-empty-string? (drop (string-split line " ") 2))))))
 
 ;Begins constructing the next frame once it encounters an X or after creating a frame from 2 tokens
 ;The current-frame parameter is for the function's internal recursive logic.
 ; When begining a frame, this function is ran with the default paramater value (this should happen with all external calls)
 ;TODO: make function more resilient to unexpected data format
 (define (build-frame-list remaining-tokens [current-frame null])
-  (if (empty? remaining-tokens)
-     current-frame  ;Base case, this will either return null or a 1 roll  frame if a spare granted an extra shot at the end
+  (if (empty? remaining-tokens) ;Base case, this will either return null or a 1 roll frame padded to be 2 numbers with an extra 0 roll
+   current-frame
   (if (null? current-frame)
       (build-frame-list (rest remaining-tokens) (first remaining-tokens))
       (if (equal? current-frame "X")
           (cons "X" (build-frame-list remaining-tokens))
           (cons (append (list current-frame) (first remaining-tokens)) (build-frame-list (rest remaining-tokens)))))))
 
+;Many hours were wasted trying to figure to stop making lists that ruin everything after a frame 10 spare or frame 11 strike.
+;This function is me giving up on finding the logical error in build-frame-list and trying to move on in a hurry
+(define (fix-those-annoying-games-with-incomplete-frames game)
+  (if (equal? (first(rest (reverse game))) "/")
+      (if (equal? (first(reverse game)) "X")
+          (append (append game '(0) '(0)))
+          (append game '(0)))
+      (if (equal? (first(rest(reverse game))) "X")
+          (append game '(0))
+          game)))
+
 
 (define (score-game game)
-null)
-;TODO:implement score-game
+  
+  (let ([frames (reverse (rest game))])
+    (foldl score-frame '(0 0 0) frames)))
 
-;Outputs a list consisting of the score, and new nextroll and 2ndnextroll values
+
+;Outputs a list consisting of the score, the number of pins knocked down with the first roll, and the number of pins knocked down with the 2nd roll
 ;This function is designed around the next/2nd-next roll parameters being already calculated
-(define (score-frame frame [next-roll 0] [2nd-next-roll 0])
+(define (score-frame frame [score-and-next-rolls-list '(0 0 0)])
+  (let ([current-score (first score-and-next-rolls-list)] [next-roll (second score-and-next-rolls-list)] [2nd-next-roll (third score-and-next-rolls-list)])
   (cond
-    [(equal? frame "X") (list (+ 10 next-roll 2nd-next-roll) 10  next-roll)]
-    [(equal? (cdr frame) "/") (list (+ 10 next-roll) (string->number(car frame)) (- 10 (string->number(car frame))))]
-   ; [else (list (string+string->number (car frame) (cdr fraame))
-                ))
+    [(equal? frame "X") (list (+ current-score 10 next-roll 2nd-next-roll) 10  next-roll)] ;frame doesn't have 2 rolls so next-roll is carried over as the 2nd roll
+    [(equal? (cdr frame) "/") (list (+ current-score 10 next-roll) (car frame) (- 10 (car frame)))]
+    [else (list (+ current-score (car frame) (cdr frame)) (car frame) (cdr frame))])))
 
 
 ;Converts a string to a number if the string is numeric, otherwise returns the string back. Returns null if given null
