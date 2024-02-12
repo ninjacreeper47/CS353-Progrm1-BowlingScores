@@ -1,8 +1,15 @@
 #lang racket
 
 
+;Turns file input into a pair of teams.  A team is a list beginning with a name with the rest of the entries being games
+;Precondition:   There are only 2 teams,  each team consists of precisely 15 games.  The input file must contain precisely 32 lines
+;         with the name of the 1st team at line #1 and the name of the  2nd team at line #17
 (define (make-team-records input-file)
-  (file->lines input-file))
+  (let ([data (file->lines input-file)])
+    (cons
+     (cons (first data) (map line->game (rest(take data 16))))
+     (cons (list-ref data 16) (map line->game (drop data 17))))))
+   
 
 ;this exists for testing of line->game
 (define example-game
@@ -33,4 +40,6 @@
       (if (equal? current-frame "X")
           (cons "X" (build-frame-list remaining-tokens))
           (cons (append (list current-frame) (first remaining-tokens)) (build-frame-list (rest remaining-tokens)))))))
-  
+
+
+
