@@ -38,9 +38,9 @@
 ;The list of tokens does not include whitespace and all digits are numeric types instead of strings
 (define (extract-frames-from-gamestring line)
   (build-frame-list
-   (fix-those-annoying-games-with-incomplete-frames
+ ;  (fix-those-annoying-games-with-incomplete-frames
    (map string->number-or-string
-   (filter non-empty-string? (drop (string-split line " ") 2))))))
+   (filter non-empty-string? (drop (string-split line " ") 2)))))
 
 ;Begins constructing the next frame once it encounters an X or after creating a frame from 2 tokens
 ;The current-frame parameter is for the function's internal recursive logic.
@@ -48,29 +48,16 @@
 ;TODO: make function more resilient to unexpected data format
 (define (build-frame-list remaining-tokens [current-frame null])
   (if (empty? remaining-tokens) ;Base case, this will either return null or a 1 roll frame padded to be 2 numbers with an extra 0 roll
-   current-frame
-  (if (null? current-frame)
-      (build-frame-list (rest remaining-tokens) (first remaining-tokens))
-      (if (equal? current-frame "X")
-          (cons "X" (build-frame-list remaining-tokens))
-          (cons (append (list current-frame) (first remaining-tokens)) (build-frame-list (rest remaining-tokens)))))))
-
-;Many hours were wasted trying to figure to stop making lists that ruin everything after a frame 10 spare or frame 11 strike.
-;This function is me giving up on finding the logical error in build-frame-list and trying to move on in a hurry
-(define (fix-those-annoying-games-with-incomplete-frames game)
-  (if (equal? (first(rest (reverse game))) "/")
-      (if (equal? (first(reverse game)) "X")
-          (append (append game '(0) '(0)))
-          (append game '(0)))
-      (if (equal? (first(rest(reverse game))) "X")
-          (if (equal? (first(rest(rest(reverse game)))) "X")
-              (append (append game '(0) '(0)))
-              (append game '(0)))
-          game)))
+      remaining-tokens
+      (if (null? current-frame)
+          (build-frame-list (rest remaining-tokens) (first remaining-tokens))
+          (if (equal? current-frame "X")
+              (cons "X" (build-frame-list remaining-tokens))
+              (cons (append (list current-frame) (first remaining-tokens)) (build-frame-list (rest remaining-tokens)))))))
 
 
+;Frames are scores in reverse order, so each one can supply next roll values to it's previous frame
 (define (score-game game)
-  
   (let ([frames (reverse (rest game))])
     (foldl score-frame '(0 0 0) frames)))
 
@@ -100,7 +87,8 @@
 ;Team 1 works, team 2 has input that my program isn't properly handling. The print statements are for viewing team 1 results before program crash :)
 (define (team-scores team-record)
    (printf (first(first team-record))) ;team 1 name
-    (printf(number->string(foldl + 0  (first(map score-game  (rest(first team-record))))))) ;team 1 score
-   (first(rest team-record)) ;team 2 name
-    (foldl + 0  (first(map score-game  (rest(rest team-record)))))) ;team 2 score
+    (printf(number->string(foldl + 0  (map first (map score-game  (rest(first team-record))))))) ;team 1 score
+   (cons
+    (first(rest team-record)) ;team 2 name
+    (foldl + 0  ( map first (map score-game  (rest(rest team-record))))))) ;team 2 score
    
